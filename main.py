@@ -4419,32 +4419,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-@bot.event
-async def on_ready():
-    print(f'🎵 {bot.user.name} is now online!')
-    print(f'📊 Connected to {len(bot.guilds)} servers')
-    print(f'🎶 High Quality Music System initialized!')
-    print(f'💎 Audio Quality: 384kbps Ultra HD')
-    print(f'🔧 Prefixes: x!, /')
-
-    # Check YouTube API status
-    if youtube_api.has_api_key():
-        print(f'🔑 YouTube API: Enabled')
-    else:
-        print(f'🔑 YouTube API: Disabled')
-
-# Run the bot
-async def main():
-    async with bot:
-        token = load_bot_token()
-        if not token:
-            print("❌ ERROR: DISCORD_TOKEN not set in environment variables")
-            print("   Please set the DISCORD_TOKEN environment variable and restart the bot")
-            return
-        await bot.start(token)
-
-# Run the bot
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
