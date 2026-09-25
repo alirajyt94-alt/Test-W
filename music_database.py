@@ -4,24 +4,25 @@ import datetime
 from typing import Optional, List, Dict, Any
 import asyncio
 
+
 class MusicDatabase:
     def __init__(self, db_path: str = "music_data.db"):
         self.db_path = db_path
         self.db = None
-        
+
     async def connect(self):
         self.db = await aiosqlite.connect(self.db_path)
         await self.db.execute("PRAGMA foreign_keys = ON")
         await self.create_tables()
         print("✅ Music Database connected successfully")
-        
+
     async def close(self):
         if self.db:
             await self.db.close()
             print("🔒 Music Database closed")
-    
+
     async def create_tables(self):
-        async with self.db.execute("""
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS servers (
                 server_id INTEGER PRIMARY KEY,
                 server_name TEXT NOT NULL,
@@ -30,10 +31,9 @@ class MusicDatabase:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS voice_channels (
                 channel_id INTEGER PRIMARY KEY,
                 server_id INTEGER NOT NULL,
@@ -43,10 +43,9 @@ class MusicDatabase:
                 last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (server_id) REFERENCES servers (server_id)
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS music_plays (
                 play_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 server_id INTEGER NOT NULL,
@@ -63,10 +62,9 @@ class MusicDatabase:
                 FOREIGN KEY (server_id) REFERENCES servers (server_id),
                 FOREIGN KEY (channel_id) REFERENCES voice_channels (channel_id)
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS music_searches (
                 search_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 server_id INTEGER NOT NULL,
@@ -77,10 +75,9 @@ class MusicDatabase:
                 searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (server_id) REFERENCES servers (server_id)
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS queue_history (
                 queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 server_id INTEGER NOT NULL,
@@ -90,10 +87,9 @@ class MusicDatabase:
                 FOREIGN KEY (server_id) REFERENCES servers (server_id),
                 FOREIGN KEY (channel_id) REFERENCES voice_channels (channel_id)
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS playback_sessions (
                 session_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 server_id INTEGER NOT NULL,
@@ -110,10 +106,9 @@ class MusicDatabase:
                 FOREIGN KEY (server_id) REFERENCES servers (server_id),
                 FOREIGN KEY (channel_id) REFERENCES voice_channels (channel_id)
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS listening_stats (
                 stat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 server_id INTEGER NOT NULL,
@@ -125,10 +120,9 @@ class MusicDatabase:
                 last_listened TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (server_id) REFERENCES servers (server_id)
             )
-        """):
-            pass
-            
-        async with self.db.execute("""
+        """)
+
+        await self.db.execute("""
             CREATE TABLE IF NOT EXISTS top_tracks (
                 track_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 server_id INTEGER NOT NULL,
@@ -139,40 +133,37 @@ class MusicDatabase:
                 last_played TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (server_id) REFERENCES servers (server_id)
             )
-        """):
-            pass
-            
+        """)
+
         await self.db.commit()
-    
+
     async def register_server(self, server_id: int, server_name: str):
-        async with self.db.execute(
-            """INSERT INTO servers (server_id, server_name, last_active) 
+        await self.db.execute(
+            """INSERT INTO servers (server_id, server_name, last_active)
                VALUES (?, ?, ?)
-               ON CONFLICT(server_id) DO UPDATE SET 
+               ON CONFLICT(server_id) DO UPDATE SET
                    server_name = excluded.server_name,
                    last_active = excluded.last_active""",
             (server_id, server_name, datetime.datetime.now())
-        ):
-            pass
+        )
         await self.db.commit()
-    
+
     async def register_voice_channel(self, channel_id: int, server_id: int, channel_name: str):
-        async with self.db.execute(
-            """INSERT INTO voice_channels (channel_id, server_id, channel_name, last_active) 
+        await self.db.execute(
+            """INSERT INTO voice_channels (channel_id, server_id, channel_name, last_active)
                VALUES (?, ?, ?, ?)
-               ON CONFLICT(channel_id) DO UPDATE SET 
+               ON CONFLICT(channel_id) DO UPDATE SET
                    channel_name = excluded.channel_name,
                    last_active = excluded.last_active""",
             (channel_id, server_id, channel_name, datetime.datetime.now())
-        ):
-            pass
+        )
         await self.db.commit()
-    
+
     async def log_music_play(
-        self, 
-        server_id: int, 
-        channel_id: int, 
-        user_id: int, 
+        self,
+        server_id: int,
+        channel_id: int,
+        user_id: int,
         user_name: str,
         track_title: str,
         track_author: str = None,
@@ -180,16 +171,15 @@ class MusicDatabase:
         track_duration: int = 0,
         track_source: str = "unknown"
     ):
-        async with self.db.execute(
-            """INSERT INTO music_plays 
-               (server_id, channel_id, user_id, user_name, track_title, track_author, 
+        await self.db.execute(
+            """INSERT INTO music_plays
+               (server_id, channel_id, user_id, user_name, track_title, track_author,
                 track_uri, track_duration, track_source, played_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (server_id, channel_id, user_id, user_name, track_title, track_author, 
+            (server_id, channel_id, user_id, user_name, track_title, track_author,
              track_uri, track_duration, track_source, datetime.datetime.now())
-        ):
-            pass
-        
+        )
+
         await self.db.execute(
             "UPDATE servers SET total_plays = total_plays + 1, last_active = ? WHERE server_id = ?",
             (datetime.datetime.now(), server_id)
@@ -198,35 +188,34 @@ class MusicDatabase:
             "UPDATE voice_channels SET total_plays = total_plays + 1, last_active = ? WHERE channel_id = ?",
             (datetime.datetime.now(), channel_id)
         )
-        
+
         await self.update_top_tracks(server_id, track_title, track_author, track_uri)
         await self.update_user_stats(server_id, user_id, user_name, track_duration)
-        
+
         await self.db.commit()
-    
+
     async def log_search(
-        self, 
-        server_id: int, 
-        user_id: int, 
+        self,
+        server_id: int,
+        user_id: int,
         user_name: str,
         search_query: str,
         results_count: int = 0
     ):
-        async with self.db.execute(
-            """INSERT INTO music_searches 
+        await self.db.execute(
+            """INSERT INTO music_searches
                (server_id, user_id, user_name, search_query, results_count, searched_at)
                VALUES (?, ?, ?, ?, ?, ?)""",
             (server_id, user_id, user_name, search_query, results_count, datetime.datetime.now())
-        ):
-            pass
-        
+        )
+
         await self.db.execute(
             "UPDATE servers SET total_searches = total_searches + 1, last_active = ? WHERE server_id = ?",
             (datetime.datetime.now(), server_id)
         )
-        
+
         await self.db.commit()
-    
+
     async def save_playback_session(
         self,
         server_id: int,
@@ -244,14 +233,14 @@ class MusicDatabase:
             "DELETE FROM playback_sessions WHERE server_id = ? AND channel_id = ?",
             (server_id, channel_id)
         )
-        
-        async with self.db.execute(
-            """INSERT INTO playback_sessions 
-               (server_id, channel_id, current_track, queue_data, position, volume, 
+
+        await self.db.execute(
+            """INSERT INTO playback_sessions
+               (server_id, channel_id, current_track, queue_data, position, volume,
                 is_paused, loop_mode, filters_data, saved_at, auto_resume)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
-                server_id, channel_id, 
+                server_id, channel_id,
                 json.dumps(current_track) if current_track else None,
                 json.dumps(queue_data) if queue_data else None,
                 position, volume, is_paused, loop_mode,
@@ -259,16 +248,15 @@ class MusicDatabase:
                 datetime.datetime.now(),
                 auto_resume
             )
-        ):
-            pass
-        
+        )
+
         await self.db.commit()
-    
+
     async def get_playback_session(self, server_id: int, channel_id: int) -> Optional[Dict[str, Any]]:
         async with self.db.execute(
-            """SELECT current_track, queue_data, position, volume, is_paused, 
+            """SELECT current_track, queue_data, position, volume, is_paused,
                       loop_mode, filters_data, auto_resume
-               FROM playback_sessions 
+               FROM playback_sessions
                WHERE server_id = ? AND channel_id = ?
                ORDER BY saved_at DESC LIMIT 1""",
             (server_id, channel_id)
@@ -286,21 +274,21 @@ class MusicDatabase:
                     'auto_resume': bool(row[7])
                 }
         return None
-    
+
     async def clear_playback_session(self, server_id: int, channel_id: int):
         await self.db.execute(
             "DELETE FROM playback_sessions WHERE server_id = ? AND channel_id = ?",
             (server_id, channel_id)
         )
         await self.db.commit()
-    
+
     async def update_top_tracks(self, server_id: int, track_title: str, track_author: str = None, track_uri: str = None):
         async with self.db.execute(
             "SELECT track_id, play_count FROM top_tracks WHERE server_id = ? AND track_title = ?",
             (server_id, track_title)
         ) as cursor:
             row = await cursor.fetchone()
-            
+
         if row:
             await self.db.execute(
                 "UPDATE top_tracks SET play_count = play_count + 1, last_played = ? WHERE track_id = ?",
@@ -313,32 +301,33 @@ class MusicDatabase:
                 (server_id, track_title, track_author, track_uri, datetime.datetime.now())
             )
         await self.db.commit()
-    
+
     async def update_user_stats(self, server_id: int, user_id: int, user_name: str, duration: int = 0):
         async with self.db.execute(
             "SELECT total_listens, total_duration FROM listening_stats WHERE server_id = ? AND user_id = ?",
             (server_id, user_id)
         ) as cursor:
             row = await cursor.fetchone()
-            
+
         if row:
             await self.db.execute(
-                """UPDATE listening_stats 
-                   SET total_listens = total_listens + 1, total_duration = total_duration + ?, 
+                """UPDATE listening_stats
+                   SET total_listens = total_listens + 1, total_duration = total_duration + ?,
                        user_name = ?, last_listened = ?
                    WHERE server_id = ? AND user_id = ?""",
                 (duration, user_name, datetime.datetime.now(), server_id, user_id)
             )
         else:
             await self.db.execute(
-                """INSERT INTO listening_stats 
+                """INSERT INTO listening_stats
                    (server_id, user_id, user_name, total_listens, total_duration, last_listened)
                    VALUES (?, ?, ?, 1, ?, ?)""",
                 (server_id, user_id, user_name, duration, datetime.datetime.now())
             )
         await self.db.commit()
-    
-    async def get_server_stats(self, server_id: int) -> Dict[str, Any]]:
+
+    # ✅ FIXED: removed extra bracket here
+    async def get_server_stats(self, server_id: int) -> Dict[str, Any]:
         async with self.db.execute(
             "SELECT total_plays, total_searches FROM servers WHERE server_id = ?",
             (server_id,)
@@ -346,35 +335,35 @@ class MusicDatabase:
             row = await cursor.fetchone()
             total_plays = row[0] if row else 0
             total_searches = row[1] if row else 0
-        
+
         async with self.db.execute(
             "SELECT COUNT(*) FROM music_plays WHERE server_id = ? AND played_at >= datetime('now', '-7 days')",
             (server_id,)
         ) as cursor:
             row = await cursor.fetchone()
             plays_this_week = row[0] if row else 0
-        
+
         async with self.db.execute(
             "SELECT COUNT(DISTINCT user_id) FROM music_plays WHERE server_id = ?",
             (server_id,)
         ) as cursor:
             row = await cursor.fetchone()
             unique_listeners = row[0] if row else 0
-        
+
         return {
             'total_plays': total_plays,
             'total_searches': total_searches,
             'plays_this_week': plays_this_week,
             'unique_listeners': unique_listeners
         }
-    
+
     async def get_top_tracks(self, server_id: int, limit: int = 10) -> List[Dict[str, Any]]:
         tracks = []
         async with self.db.execute(
-            """SELECT track_title, track_author, play_count, last_played 
-               FROM top_tracks 
-               WHERE server_id = ? 
-               ORDER BY play_count DESC 
+            """SELECT track_title, track_author, play_count, last_played
+               FROM top_tracks
+               WHERE server_id = ?
+               ORDER BY play_count DESC
                LIMIT ?""",
             (server_id, limit)
         ) as cursor:
@@ -386,14 +375,14 @@ class MusicDatabase:
                     'last_played': row[3]
                 })
         return tracks
-    
+
     async def get_user_listening_history(self, server_id: int, user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
         history = []
         async with self.db.execute(
-            """SELECT track_title, track_author, track_duration, played_at 
-               FROM music_plays 
-               WHERE server_id = ? AND user_id = ? 
-               ORDER BY played_at DESC 
+            """SELECT track_title, track_author, track_duration, played_at
+               FROM music_plays
+               WHERE server_id = ? AND user_id = ?
+               ORDER BY played_at DESC
                LIMIT ?""",
             (server_id, user_id, limit)
         ) as cursor:
@@ -405,11 +394,11 @@ class MusicDatabase:
                     'played_at': row[3]
                 })
         return history
-    
+
     async def get_user_stats(self, server_id: int, user_id: int) -> Optional[Dict[str, Any]]:
         async with self.db.execute(
-            """SELECT user_name, total_listens, total_duration, last_listened 
-               FROM listening_stats 
+            """SELECT user_name, total_listens, total_duration, last_listened
+               FROM listening_stats
                WHERE server_id = ? AND user_id = ?""",
             (server_id, user_id)
         ) as cursor:
@@ -422,14 +411,14 @@ class MusicDatabase:
                     'last_listened': row[3]
                 }
         return None
-    
+
     async def get_recent_searches(self, server_id: int, limit: int = 10) -> List[Dict[str, Any]]:
         searches = []
         async with self.db.execute(
-            """SELECT user_name, search_query, results_count, searched_at 
-               FROM music_searches 
-               WHERE server_id = ? 
-               ORDER BY searched_at DESC 
+            """SELECT user_name, search_query, results_count, searched_at
+               FROM music_searches
+               WHERE server_id = ?
+               ORDER BY searched_at DESC
                LIMIT ?""",
             (server_id, limit)
         ) as cursor:
@@ -441,22 +430,21 @@ class MusicDatabase:
                     'searched_at': row[3]
                 })
         return searches
-    
+
     async def save_queue_snapshot(self, server_id: int, channel_id: int, queue_data: List[Dict[str, Any]]):
-        async with self.db.execute(
+        await self.db.execute(
             """INSERT INTO queue_history (server_id, channel_id, queue_data, saved_at)
                VALUES (?, ?, ?, ?)""",
             (server_id, channel_id, json.dumps(queue_data), datetime.datetime.now())
-        ):
-            pass
+        )
         await self.db.commit()
-    
+
     async def get_all_active_sessions(self) -> List[Dict[str, Any]]:
         sessions = []
         async with self.db.execute(
-            """SELECT server_id, channel_id, current_track, queue_data, position, 
+            """SELECT server_id, channel_id, current_track, queue_data, position,
                       volume, is_paused, loop_mode, filters_data, auto_resume
-               FROM playback_sessions 
+               FROM playback_sessions
                WHERE auto_resume = 1
                ORDER BY saved_at DESC"""
         ) as cursor:
